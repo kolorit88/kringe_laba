@@ -113,18 +113,19 @@
      }
 
     .avatar {
-        width: 125px;
-        height: 125px;
-        border-radius: 50%;
-        background-color: #7289da;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 20px;
-        margin-top: 30px;
-        font-size: 24px;
-        font-weight: bold;
-        color: white;
+      width: 125px;
+      height: 125px;
+      border-radius: 50%;
+      background-color: #7289da;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      font-size: 24px;
+      font-weight: bold;
+      color: white;
     }
 
     .caller-info {
@@ -3834,8 +3835,6 @@
         </div>
 
         <!--- Начало кринж лабы --->
-        <h1>Розыгрыш Discord-звонка</h1>
-        <p>Через несколько секунд появится имитация звонка из Discord</p>
         <div class="countdown" id="countdown">5</div>
     </div>
 
@@ -3843,9 +3842,9 @@
 
     <div class="call-card" id="callCard">
         <div class="call-header">
-            <div class="avatar">Д</div>
+            <div class="avatar"></div>
             <div class="caller-info">
-                <div class="caller-name">Дмитрий</div>
+                <div class="caller-name"></div>
                 <div class="call-status">Входящий звонок...</div>
             </div>
         </div>
@@ -3862,40 +3861,319 @@
     </button>
 </div>
     </div>
+    <!--- начало кринж лабы --->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const callCard = document.getElementById('callCard');
-            const overlay = document.getElementById('overlay');
-            const countdownElement = document.getElementById('countdown');
+    const callers = [
+      { name: "Кандидат технических наук, доцент кафедры Цифровых...", avatar: "avatars/docent.jpg", acceptSound: "sounds/доцент.mp3", talk_time: 57000 },
+      { name: "Виталий Шедоу", avatar: "avatars/vitaly_shadow.jpg", acceptSound: "sounds/java_optifine1.mp3", talk_time: 5500},
+      { name: "Смерть в нищите", avatar: "avatars/smert_in_nishita.jpg", acceptSound: "sounds/nishita.mp3", talk_time: 17600},
+      { name: "Виталий Шедоу", avatar: "avatars/vitaly_shadow.jpg", acceptSound: "sounds/java_optifine2.mp3", talk_time: 8500},
+      { name: "Гос услуги (официальный дискорд аккаунт)", avatar: "avatars/gos.jpg", acceptSound: "sounds/gos.mp3", talk_time: 32000},
+     ];
 
-            let countdown = 5;
+    let currentCallerIndex = 0;
+
+    const callCard = document.getElementById('callCard');
+    const overlay = document.getElementById('overlay');
+    const countdownElement = document.getElementById('countdown');
+
+    const ringtone = new Audio();
+    ringtone.src = 'sounds/discord-halloween-2025.mp3';
+    ringtone.loop = true;
+
+    const quit_sound = new Audio();
+    quit_sound.src = 'sounds/discord_quit.mp3';
+
+    const telegram_message_sound = new Audio();
+    telegram_message_sound.src = 'sounds/telegram_message.mp3';
+
+    document.querySelector('.container').style.display = 'none';
+    createCaptchaModal();
+
+    function showTelegramMessage(sender_name, message) {
+      telegram_message_sound.play();
+      const telegramMsg = document.createElement('div');
+        telegramMsg.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #182533;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 150px;
+            z-index: 1001;
+            font-family: 'Segoe UI', sans-serif;
+            border-left: 4px solid #2aabee;
+            animation: slideInLeft 0.3s ease-out;
+        `;
+
+        telegramMsg.innerHTML = `
+            <div style="display: flex; align-items: center; margin-bottom: 8px; width: 250px;">
+                <div style="width: 24px; height: 24px; background: #2aabee; border-radius: 50%; margin-right: 10px; display: flex; align-items: center; justify-content: center;">
+                </div>
+                <div style="font-weight: bold; font-size: 14px;">${sender_name}</div>
+                <div style="margin-left: auto; font-size: 12px; color: #8e8e93;">только что</div>
+            </div>
+            <div style="font-size: 14px; line-height: 1.4;">${message}</div>
+        `;
+
+        document.body.appendChild(telegramMsg);
+
+        setTimeout(() => {
+            telegramMsg.style.animation = 'slideOutLeft 0.3s ease-in';
+            setTimeout(() => {
+                if (telegramMsg.parentNode) {
+                    telegramMsg.parentNode.removeChild(telegramMsg);
+                }
+            }, 300);
+        }, 5000);
+    }
+
+    function createCaptchaModal() {
+        const captchaOverlay = document.createElement('div');
+        captchaOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+
+        const captchaModal = document.createElement('div');
+        captchaModal.style.cssText = `
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            width: 350px;
+            max-width: 90vw;
+            color: #000;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        `;
+
+        captchaModal.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #000;">Пожалуйста, подтвердите, что вы не робот</div>
+                <div style="font-size: 14px; color: #666; margin-bottom: 20px;">Это необходимо для защиты от автоматических запросов</div>
+            </div>
+
+            <div style="
+                background: #f9f9f9;
+                border: 2px solid #e0e0e0;
+                border-radius: 4px;
+                padding: 15px;
+                margin-bottom: 20px;
+                cursor: pointer;
+                transition: all 0.3s;
+            " id="captchaCheckbox">
+                <div style="display: flex; align-items: center; justify-content: center;">
+                    <div style="
+                        width: 20px;
+                        height: 20px;
+                        border: 2px solid #ccc;
+                        border-radius: 3px;
+                        margin-right: 10px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: white;
+                    " id="checkbox">
+                        <div style="color: #fff; font-size: 14px; display: none;" id="checkmark">✓</div>
+                    </div>
+                    <div style="color: #000; font-size: 16px;">Я не робот</div>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 24px; height: 24px; margin-right: 8px;">
+                    </div>
+                    <div style="font-size: 12px; color: #666;">reCAPTCHA</div>
+                </div>
+                <div style="font-size: 12px; color: #666;">
+                    <a href="#" style="color: #666; text-decoration: none;">Конфиденциальность</a> -
+                    <a href="#" style="color: #666; text-decoration: none;">Условия</a>
+                </div>
+            </div>
+
+            <div style="font-size: 11px; color: #999; text-align: left;">
+                Защищено reCAPTCHA. Конфиденциальность и Условия применяются.
+            </div>
+        `;
+
+        captchaOverlay.appendChild(captchaModal);
+        document.body.appendChild(captchaOverlay);
+
+        document.getElementById('captchaCheckbox').addEventListener('click', function() {
+            const checkbox = document.getElementById('checkbox');
+            const checkmark = document.getElementById('checkmark');
+
+            checkbox.style.borderColor = '#4285f4';
+            checkbox.style.background = '#4285f4';
+            checkmark.style.display = 'block';
+
+            setTimeout(() => {
+                document.body.removeChild(captchaOverlay);
+                document.querySelector('.container').style.display = 'flex';
+                startCountdown();
+            }, 1000);
+        });
+    }
+
+    function updateCallerData() {
+    const caller = callers[currentCallerIndex];
+    document.querySelector('.caller-name').textContent = caller.name;
+    document.querySelector('.avatar').style.backgroundImage = `url(${caller.avatar})`;
+    if (caller.name === "Смерть в нищите"){
+        document.querySelector('.decline').style.display = 'none';
+      }
+    else{
+      document.querySelector('.decline').style.display = 'flex';
+    }
+    }
+
+    function nextCaller() {
+        currentCallerIndex = (currentCallerIndex + 1) % callers.length;
+        updateCallerData();
+    }
+
+    function startCountdown() {
+        let countdown = 5;
+        countdownElement.textContent = countdown;
+
+        const countdownInterval = setInterval(() => {
+            countdown--;
             countdownElement.textContent = countdown;
 
-            const countdownInterval = setInterval(() => {
-                countdown--;
-                countdownElement.textContent = countdown;
-
-                if (countdown <= 0) {
-                    clearInterval(countdownInterval);
-                    showCallCard();
-                }
-            }, 1000);
-
-            function showCallCard() {
-                overlay.style.display = 'block';
-                callCard.style.display = 'block';
-                countdownElement.style.display = 'none';
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                showCallCard();
             }
+        }, 1000);
+    }
 
-            // Обработчики для кнопок (ничего не делают, как и требуется)
-            document.querySelector('.decline').addEventListener('click', function() {
-                // Ничего не происходит
-            });
+    function showCallCard() {
+        overlay.style.display = 'block';
+        callCard.style.display = 'block';
+        countdownElement.style.display = 'none';
+        updateCallerData();
 
-            document.querySelector('.accept').addEventListener('click', function() {
-                // Ничего не происходит
-            });
+        ringtone.play().catch(e => {
+            console.log('Ошибка воспроизведения:', e);
         });
+    }
+
+    function hideCallCard() {
+      callCard.style.display = 'none';
+      overlay.style.display = 'none';
+      ringtone.pause();
+      ringtone.currentTime = 0;
+    }
+    function hideCallButtons() {
+        document.querySelector('.call-buttons').style.display = 'none';
+    }
+
+    function showCallButtons() {
+        document.querySelector('.call-buttons').style.display = 'flex';
+    }
+
+    document.querySelector('.decline').addEventListener('click', function() {
+        ringtone.pause();
+        ringtone.currentTime = 0;
+        hideCallCard();
+        const caller = callers[currentCallerIndex];
+
+        if(caller.name === "Кандидат технических наук, доцент кафедры Цифровых...")
+        {
+            setTimeout(() => {
+              showTelegramMessage("ФИТ-231: Давид", "Сергей Ю. Просил передать, что всей группе минус балл. Снова");
+            }, 2000);
+            nextCaller();
+        }
+
+        else if (caller.name === "Виталий Шедоу")
+        {
+            setTimeout(() => {
+              showTelegramMessage("Виталий Шадоу", "КАК ЗАЙТИ СЕРВЕР ДЖАВА ОПТИФАЙН");
+              setTimeout(() => {
+                  showTelegramMessage("Виталий Шадоу", "КАК");
+                  setTimeout(() => {
+                    showTelegramMessage("Виталий Шадоу", "Д****ЕБЫ ВЫ КАК СЕРВЕР ЗАЙТИ ДАЖАВА");
+                  }, 2000);
+                }, 2000);
+            }, 2000);
+            nextCaller();
+        }
+
+        setTimeout(() => {
+            showCallCard();
+            ringtone.play();
+        }, 8000);
+    });
+
+    document.querySelector('.accept').addEventListener('click', function() {
+          ringtone.pause();
+          ringtone.currentTime = 0;
+          const caller = callers[currentCallerIndex];
+          hideCallButtons();
+          const acceptSound = new Audio(callers[currentCallerIndex].acceptSound);
+          acceptSound.play();
+
+          if (caller.name === "Смерть в нищите")
+               {
+                    setTimeout(() => {
+                      showTelegramMessage("HH.RU", "Заявка отклонена: 'Требуется IT стажер, ЗП 20к, минимум 5 лет опыта, зание технологий HTML CSS JavaScript TypeScript React Vue.js....'");
+                      setTimeout(() => {
+                          showTelegramMessage("Новости", "Чат-гпт уже заменил 50% рынка IT. читать далее...");
+                          setTimeout(() => {
+                              showTelegramMessage("IT сообщество: Python Coder 228", "Ребята, нашел вакансию уборщик в общепите, налетайте");
+                         }, 5000);
+                      }, 5000);
+                    }, 5000);
+               }
+
+          else if (caller.name === "Гос услуги (официальный дискорд аккаунт)")
+               {
+                    setTimeout(() => {
+                      showTelegramMessage("Гос услуги (официальный телеграм аккаунт)", "ВНИМАНИЕ!!! НА ВАС ОФОРМЛЕН КРЕДИТ, ЭТО ТОЧНО НЕ ОБМАН");
+                      setTimeout(() => {
+                          showTelegramMessage("Сбер Банк официальный телеграм аккаунт)", "Вам оформили перевод 5000000р, чтобы подтвердить, сообщите данные карты...");
+                          setTimeout(() => {
+                              showTelegramMessage("ФИТ-231: Никита", "Ребята, меня пытались обмануть");
+                              setTimeout(() => {
+                                  showTelegramMessage("ФИТ-231: Никита", "Спросили номер карты для активации гос услуг");
+                                  setTimeout(() => {
+                                    showTelegramMessage("ФИТ-231: Никита", "Но меня не проведешь, я то знаю, что нужен ещё и cvv");
+                                    setTimeout(() => {
+                                      showTelegramMessage("ФИТ-231: Никита", "Его тоже сообщил, чтобы активация прошла успешно");
+                                   }, 5000);
+                                }, 5000);
+                            }, 5000);
+                         }, 4000);
+                      }, 5000);
+                    }, 5000);
+               }
+
+          setTimeout(() => {
+              quit_sound.play();
+              callCard.style.display = 'none';
+              overlay.style.display = 'none';
+
+              setTimeout(() => {
+                  showCallButtons();
+                  nextCaller();
+                  showCallCard();
+                  }, 3000);
+              }, caller.talk_time);
+          });
+      });
     </script>
   </body>
 </html>
